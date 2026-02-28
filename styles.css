@@ -1115,7 +1115,7 @@ button {
   gap: var(--sp-4);
 }
 @media (min-width: 640px)  { .demos__grid { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 960px)  { .demos__grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1080px) { .demos__grid { grid-template-columns: repeat(4, 1fr); } }
 
 /* ── Demo Card — single CTA, clean hierarchy ── */
 .demo-card {
@@ -1318,6 +1318,24 @@ button {
   flex-shrink: 0;
   transition: color var(--transition), transform var(--transition);
 }
+/* Minimal centered variant — homepage only (no cards column) */
+.demos-teaser--minimal .demos-teaser__centered {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+  padding: var(--sp-4) 0;
+}
+.demos-teaser--minimal .demos-teaser__title {
+  font-size: var(--text-3xl);
+}
+.demos-teaser--minimal .demos-teaser__sub {
+  margin: var(--sp-4) auto var(--sp-8);
+  max-width: 560px;
+}
+.demos-teaser__cta {
+  display: inline-flex;
+}
+
 .demos-teaser__card:hover .demos-teaser__card-arrow {
   color: var(--green-400);
   transform: translateX(3px);
