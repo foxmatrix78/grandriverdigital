@@ -1,6 +1,6 @@
 /**
- * Grand River Digital — script.js
- * Multi-page build · Zero console errors
+ * Grand River Digital — script.js v2
+ * Premium agency redesign
  */
 
 'use strict';
@@ -15,14 +15,19 @@ function initHeader() {
   const header = qs('#header');
   if (!header) return;
   let ticking = false;
+
+  const update = () => {
+    header.classList.toggle('is-scrolled', window.scrollY > 20);
+    ticking = false;
+  };
+
   window.addEventListener('scroll', () => {
     if (ticking) return;
     ticking = true;
-    requestAnimationFrame(() => {
-      header.classList.toggle('is-scrolled', window.scrollY > 10);
-      ticking = false;
-    });
+    requestAnimationFrame(update);
   }, { passive: true });
+
+  update();
 }
 
 /* ─── MOBILE NAV ─────────────────────────── */
@@ -68,7 +73,7 @@ function initMobileNav() {
   });
 }
 
-/* ─── ACTIVE NAV (pathname-based) ────────── */
+/* ─── ACTIVE NAV ─────────────────────────── */
 function initActiveNav() {
   const links = qsa('.nav__link');
   if (!links.length) return;
@@ -105,19 +110,19 @@ function initReveal() {
   const elements = qsa('.reveal');
   if (!elements.length) return;
 
-  const STAGGER_SELECTORS =
-    '.services__grid, .why__grid, .about__grid, .portfolio__grid, .demos__grid, .process__steps';
+  const STAGGER_PARENTS =
+    '.services-grid, .demos-grid, .values-grid, .founders-grid, .stats-grid, .services-detail-grid';
 
   const io = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
       const el     = entry.target;
-      const parent = el.closest(STAGGER_SELECTORS);
+      const parent = el.closest(STAGGER_PARENTS);
 
       if (parent) {
         const siblings = qsa('.reveal', parent);
         const idx      = siblings.indexOf(el);
-        const delay    = idx > 0 ? Math.min(idx * 70, 350) : 0;
+        const delay    = idx > 0 ? Math.min(idx * 80, 400) : 0;
         el.style.transitionDelay = `${delay}ms`;
       }
 
@@ -128,7 +133,7 @@ function initReveal() {
 
       io.unobserve(el);
     });
-  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
 
   elements.forEach(el => io.observe(el));
 }
@@ -156,15 +161,13 @@ function initContactForm() {
 
   const submitBtn = qs('[type="submit"]', form);
   const required  = qsa('[required]', form);
-  const btnSnapshot = Array.from(submitBtn.childNodes).map(n => n.cloneNode(true));
+  const btnLabel  = submitBtn.innerHTML;
 
   function setSubmitting(on) {
     submitBtn.disabled = on;
-    if (on) {
-      submitBtn.textContent = 'Sending…';
-    } else {
-      submitBtn.replaceChildren(...btnSnapshot.map(n => n.cloneNode(true)));
-    }
+    submitBtn.innerHTML = on
+      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Sending…'
+      : btnLabel;
   }
 
   function clearError(field) {
@@ -201,43 +204,33 @@ function initContactForm() {
       return;
     }
 
-    const formData = {
-      name:        qs('#cname', form).value.trim(),
-      email:       qs('#cemail', form).value.trim(),
-      business:    qs('#cbusiness', form).value.trim(),
-      description: qs('#cdesc', form).value.trim(),
-      budget:      qs('#cbudget', form).value,
-      timestamp:   new Date().toISOString(),
-    };
-
     setSubmitting(true);
 
     fetch('https://formspree.io/f/xnjbrllk', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
-        name:        formData.name,
-        email:       formData.email,
-        business:    formData.business,
-        description: formData.description,
-        budget:      formData.budget,
-        timestamp:   formData.timestamp,
-        _replyto:    formData.email,
-        _subject:    `New consultation request — ${formData.business}`,
+        name:        qs('#cname', form)?.value.trim(),
+        email:       qs('#cemail', form)?.value.trim(),
+        business:    qs('#cbusiness', form)?.value.trim(),
+        description: qs('#cdesc', form)?.value.trim(),
+        budget:      qs('#cbudget', form)?.value,
+        timestamp:   new Date().toISOString(),
+        _replyto:    qs('#cemail', form)?.value.trim(),
+        _subject:    `New consultation request — ${qs('#cbusiness', form)?.value.trim()}`,
       }),
     })
     .then(res => res.json())
     .then(data => {
+      setSubmitting(false);
       if (data.ok) {
         form.reset();
         required.forEach(f => clearError(f));
-        setSubmitting(false);
         successEl.hidden = false;
         successEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         setTimeout(() => { successEl.hidden = true; }, 8000);
       } else {
-        setSubmitting(false);
-        alert('Something went wrong. Please try again or email us directly at info@grandriverdigital.ca');
+        alert('Something went wrong. Please try again or email info@grandriverdigital.ca');
       }
     })
     .catch(() => {
@@ -247,45 +240,33 @@ function initContactForm() {
   });
 }
 
-/* ─── PROCESS STEPS ──────────────────────── */
-function initProcessSteps() {
-  if (prefersReducedMotion()) return;
-  const steps = qsa('.process__step');
-  if (!steps.length) return;
-
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) entry.target.classList.add('is-active-step');
-    });
-  }, { threshold: 0.4 });
-
-  steps.forEach(step => io.observe(step));
+/* ─── FOOTER YEAR ────────────────────────── */
+function initFooterYear() {
+  const yr = new Date().getFullYear();
+  qsa('.footer-year').forEach(el => { el.textContent = yr; });
 }
 
-/* ─── MOCK CHART ANIMATION ───────────────── */
-function initMockChart() {
+/* ─── HERO CHART BARS ANIMATION ─────────── */
+function initHeroVisuals() {
   if (prefersReducedMotion()) return;
-  const bars = qsa('.mock-chart__bar');
+  const bars = qsa('.visual-bar');
   if (!bars.length) return;
 
-  bars.forEach(bar => { bar.style.height = '0%'; });
+  bars.forEach(bar => { bar.style.height = '8px'; });
   setTimeout(() => {
     bars.forEach((bar, i) => {
       setTimeout(() => {
-        bar.style.height = bar.style.getPropertyValue('--h') || '60%';
-      }, i * 80);
+        const heights = ['40%','55%','45%','70%','60%','85%'];
+        bar.style.height = heights[i % heights.length];
+      }, i * 100);
     });
-  }, 600);
+  }, 500);
 }
 
-/* ─── FOOTER YEAR ────────────────────────── */
-function initFooterYear() {
-  qsa('.footer-year').forEach(el => {
-    el.textContent = new Date().getFullYear();
-  });
-  const el = qs('#footerYear');
-  if (el) el.textContent = new Date().getFullYear();
-}
+/* ─── SPIN KEYFRAME (for loading button) ── */
+const styleTag = document.createElement('style');
+styleTag.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(styleTag);
 
 /* ─── INIT ───────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
@@ -295,7 +276,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initReveal();
   initSmoothScroll();
   initContactForm();
-  initProcessSteps();
-  initMockChart();
   initFooterYear();
+  initHeroVisuals();
 });
